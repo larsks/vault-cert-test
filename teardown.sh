@@ -1,5 +1,6 @@
 #!/bin/sh
 
 rm -rf artifacts
-docker rm -f vault
 kind delete cluster -n vault-test
+docker rm -f vault
+docker rm -f step-ca

@@ -6,18 +6,24 @@ container_addr() {
 	docker container inspect $1 | jq -r '.[0].NetworkSettings.Networks.kind.IPAddress'
 }
 
+container_is_running() {
+	docker container inspect $1 > /dev/null 2>&1
+}
+
 start_cluster() {
+	echo "start kubernetes cluster"
+
 	if ! kind get clusters | grep -q vault-test; then
 		kind create cluster --config kind.yaml -n vault-test --kubeconfig artifacts/kubeconfig
 	fi
 
 	export KUBECONFIG=$PWD/artifacts/kubeconfig
-	kubectl -n external-secrets get secret eso-vault-auth-token -o json | jq -r .data.token | base64 -d > artifacts/jwt-token
 	docker exec vault-test-control-plane cat /etc/kubernetes/pki/ca.crt > artifacts/ca.crt
 }
 
 start_vault() {
-	if ! docker container inspect vault > /dev/null 2>&1; then
+	echo "start vault"
+	if ! container_is_running vault; then
 		docker run --rm -d --name vault -p 8200:8200 \
 			--network kind \
 			--hostname vault.vault-test \
@@ -37,12 +43,32 @@ start_vault() {
 	EOF
 }
 
+start_step_ca() {
+	echo "start step-ca"
+	if ! container_is_running step-ca; then
+		docker run --rm -d --name step-ca -p 9000:9000 \
+			--network kind \
+			--hostname step-va.vault-test \
+			-e DOCKER_STEPCA_INIT_NAME=vault-test-ca \
+			-e DOCKER_STEPCA_INIT_DNS_NAMES=localhost,step-ca.vault-test \
+			docker.io/smallstep/step-ca:0.25.2
+	fi
+
+	until docker logs step-ca 2> /dev/null | grep -q 'administrative password'; do
+		sleep 1
+	done
+	docker logs step-ca 2> /dev/null | awk -F": " '/administrative password/ {print $2}' > artifacts/step-ca-password
+	curl -sSf -k https://localhost:9000/roots.pem > artifacts/step-ca-root-cert.crt
+	step certificate fingerprint artifacts/step-ca-root-cert.crt > artifacts/step-ca-root-fingerprint
+}
+
 set -eu
 
 mkdir -p artifacts
 
 start_cluster
 start_vault
+start_step_ca
 
 . artifacts/vault.env
 
@@ -55,5 +81,7 @@ until kubectl apply -k manifests/vault-integration; do
 	echo "Failed to apply external secrets operator; retrying..." >&2
 	sleep 5
 done
+
+kubectl -n external-secrets get secret eso-vault-auth-token -o json | jq -r .data.token | base64 -d > artifacts/jwt-token
 
 sh configure-vault.sh
