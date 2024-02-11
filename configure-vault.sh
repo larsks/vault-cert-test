@@ -18,3 +18,5 @@ vault write auth/kubernetes/role/secret-reader \
     bound_service_account_namespaces=external-secrets \
     policies=default,secret-reader \
     ttl=1h
+
+vault kv put -mount=secret example-secret secret=thisisatest
