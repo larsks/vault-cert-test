@@ -86,6 +86,11 @@ until kubectl apply -k manifests/external-secrets; do
 	sleep 5
 done
 
+until kubectl apply -k manifests/nginx-ingress; do
+	echo "Failed to apply nginx ingress; retrying..." >&2
+	sleep 5
+done
+
 until kubectl apply -k manifests/vault-integration; do
 	echo "Failed to apply external secrets operator; retrying..." >&2
 	sleep 5
