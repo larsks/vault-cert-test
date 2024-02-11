@@ -10,6 +10,13 @@ container_is_running() {
 	docker container inspect "$1" > /dev/null 2>&1
 }
 
+apply_manifests() {
+	until kubectl apply -k "$1"; do
+		echo "Failed to apply $1; retrying..." >&2
+		sleep 5
+	done
+}
+
 start_cluster() {
 	echo "start kubernetes cluster"
 
@@ -81,20 +88,9 @@ start_vault
 
 . artifacts/vault.env
 
-until kubectl apply -k manifests/external-secrets; do
-	echo "Failed to apply external secrets operator; retrying..." >&2
-	sleep 5
-done
-
-until kubectl apply -k manifests/nginx-ingress; do
-	echo "Failed to apply nginx ingress; retrying..." >&2
-	sleep 5
-done
-
-until kubectl apply -k manifests/vault-integration; do
-	echo "Failed to apply external secrets operator; retrying..." >&2
-	sleep 5
-done
+apply_manifests manifests/external-secrets
+apply_manifests manifests/nginx-ingress
+apply_manifests manifests/vault-integration
 
 kubectl -n external-secrets get secret eso-vault-auth-token -o json | jq -r .data.token | base64 -d > artifacts/jwt-token
 
