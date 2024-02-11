@@ -56,6 +56,8 @@ start_step_ca() {
 			--hostname step-va.vault-test \
 			-e DOCKER_STEPCA_INIT_NAME=vault-test-ca \
 			-e DOCKER_STEPCA_INIT_DNS_NAMES=localhost,step-ca.vault-test \
+			-e DOCKER_STEPCA_INIT_REMOTE_MANAGEMENT=true \
+			-e DOCKER_STEPCA_INIT_ADMIN_SUBJECT=step \
 			docker.io/smallstep/step-ca:0.25.2 > artifacts/step-ca.cid
 	fi
 
