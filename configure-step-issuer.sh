@@ -40,4 +40,3 @@ spec:
 EOF
 
 kubectl apply -n default -f artifacts/step-issuer.yaml --server-side
-kubectl apply -k manifests/certificates --server-side

@@ -17,6 +17,16 @@ apply_manifests() {
 	done
 }
 
+wait_for_pods() {
+	local ns=$1 condition=$2
+	shift 2
+
+	echo "waiting for pods in $ns"
+	while ! kubectl -n "$ns" wait --for condition="$condition" pod "$@" 2> /dev/null; do
+		sleep 1
+	done
+}
+
 start_cluster() {
 	echo "start kubernetes cluster"
 
@@ -89,12 +99,18 @@ start_vault
 . artifacts/vault.env
 
 apply_manifests manifests/external-secrets
+wait_for_pods external-secrets Ready -l app.kubernetes.io/name=external-secrets-webhook
+
 apply_manifests manifests/nginx-ingress
 apply_manifests manifests/vault-integration
 apply_manifests manifests/cert-manager
+wait_for_pods cert-manager Ready -l app.kubernetes.io/name=webhook
+
 apply_manifests manifests/step-issuer
 
 kubectl -n external-secrets get secret eso-vault-auth-token -o json | jq -r .data.token | base64 -d > artifacts/eso-vault-auth-jwt
 
 sh configure-vault.sh
 sh configure-step-issuer.sh
+
+apply_manifests manifests/certificates
