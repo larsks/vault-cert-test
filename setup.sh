@@ -17,6 +17,8 @@ start_cluster() {
 		kind create cluster --config kind.yaml -n vault-test --kubeconfig artifacts/kubeconfig
 	fi
 
+	container_addr vault-test-control-plane > artifacts/cluster.address
+
 	export KUBECONFIG=$PWD/artifacts/kubeconfig
 	docker exec vault-test-control-plane cat /etc/kubernetes/pki/ca.crt > artifacts/ca.crt
 }
@@ -29,6 +31,8 @@ start_vault() {
 			--hostname vault.vault-test \
 			hashicorp/vault:${VAULT_VERSION} > artifacts/vault.cid
 	fi
+
+	container_addr vault.vault-test > artifacts/vault.address
 
 	until docker logs vault.vault-test 2> /dev/null | grep -q 'Unseal Key'; do
 		(( SECONDS % 5 == 0 )) && echo "waiting for vault unseal key"
