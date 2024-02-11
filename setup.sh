@@ -91,6 +91,7 @@ start_vault
 apply_manifests manifests/external-secrets
 apply_manifests manifests/nginx-ingress
 apply_manifests manifests/vault-integration
+apply_manifests manifests/cert-manager
 
 kubectl -n external-secrets get secret eso-vault-auth-token -o json | jq -r .data.token | base64 -d > artifacts/jwt-token
 
