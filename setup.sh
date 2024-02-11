@@ -117,3 +117,4 @@ sh configure-step-issuer.sh
 apply_manifests manifests/certificates
 
 wait_for_pods ingress-nginx Ready -l app.kubernetes.io/name=ingress-nginx,app.kubernetes.io/component=controller
+apply_manifests manifests/ingresses
