@@ -11,6 +11,7 @@ container_is_running() {
 }
 
 apply_manifests() {
+	echo "🗎 apply manifests from $1"
 	until kubectl apply -k "$1"; do
 		echo "Failed to apply $1; retrying..." >&2
 		sleep 5
@@ -21,14 +22,14 @@ wait_for_pods() {
 	local ns=$1 condition=$2
 	shift 2
 
-	echo "waiting for pods in $ns"
+	echo "🕒 waiting for pods in $ns"
 	while ! kubectl -n "$ns" wait --for condition="$condition" pod "$@" 2> /dev/null; do
 		sleep 1
 	done
 }
 
 start_cluster() {
-	echo "start kubernetes cluster"
+	echo "🟢 start kubernetes cluster"
 
 	if ! kind get clusters | grep -q vault-test; then
 		kind create cluster --config kind.yaml -n vault-test --kubeconfig artifacts/kubeconfig
@@ -41,7 +42,7 @@ start_cluster() {
 }
 
 start_vault() {
-	echo "start vault"
+	echo "🟢 start vault"
 	if ! container_is_running vault.vault-test; then
 		docker run --rm -d --name vault.vault-test -p 8200:8200 \
 			--network kind \
@@ -66,7 +67,7 @@ start_vault() {
 }
 
 start_step_ca() {
-	echo "start step-ca"
+	echo "🟢 start step-ca"
 	if ! container_is_running step-ca.vault-test; then
 		docker run --rm -d --name step-ca.vault-test -p 9000:9000 \
 			--network kind \
@@ -99,13 +100,13 @@ start_vault
 . artifacts/vault.env
 
 apply_manifests manifests/external-secrets
-wait_for_pods external-secrets Ready -l app.kubernetes.io/name=external-secrets-webhook
-
 apply_manifests manifests/nginx-ingress
-apply_manifests manifests/vault-integration
 apply_manifests manifests/cert-manager
-wait_for_pods cert-manager Ready -l app.kubernetes.io/name=webhook
 
+wait_for_pods external-secrets Ready -l app.kubernetes.io/name=external-secrets-webhook
+apply_manifests manifests/vault-integration
+
+wait_for_pods cert-manager Ready -l app.kubernetes.io/name=webhook
 apply_manifests manifests/step-issuer
 
 kubectl -n external-secrets get secret eso-vault-auth-token -o json | jq -r .data.token | base64 -d > artifacts/eso-vault-auth-jwt
@@ -114,3 +115,5 @@ sh configure-vault.sh
 sh configure-step-issuer.sh
 
 apply_manifests manifests/certificates
+
+wait_for_pods ingress-nginx Ready -l app.kubernetes.io/name=ingress-nginx,app.kubernetes.io/component=controller
