@@ -7,7 +7,7 @@ if ! vault auth tune kubernetes > /dev/null 2>&1; then
 fi
 
 vault write auth/kubernetes/config \
-    token_reviewer_jwt=@artifacts/jwt-token \
+    token_reviewer_jwt=@artifacts/eso-vault-auth-jwt \
     kubernetes_host=https://vault-test-control-plane:6443 \
     kubernetes_ca_cert=@artifacts/ca.crt
 

@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: example-certificate
+spec:
+  secretName: example-certificate
+  commonName: api.cluster.vault-test
+  dnsNames:
+    - localhost
+    - api.cluster.vault-test
+  duration: 8h
+  renewBefore: 2h
+  issuerRef:
+    group: certmanager.step.sm
+    kind: StepIssuer
+    name: step-issuer

@@ -94,6 +94,7 @@ apply_manifests manifests/vault-integration
 apply_manifests manifests/cert-manager
 apply_manifests manifests/step-issuer
 
-kubectl -n external-secrets get secret eso-vault-auth-token -o json | jq -r .data.token | base64 -d > artifacts/jwt-token
+kubectl -n external-secrets get secret eso-vault-auth-token -o json | jq -r .data.token | base64 -d > artifacts/eso-vault-auth-jwt
 
 sh configure-vault.sh
+sh configure-step-issuer.sh
