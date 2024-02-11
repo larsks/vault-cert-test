@@ -18,14 +18,15 @@ step ca provisioner list | jq -r '.[]|select(.name == "step-issuer")|.key.kid' >
 cat <<EOF > artifacts/step-issuer.yaml
 apiVersion: v1
 metadata:
-  name: step-certificates-provisioner-password
+  name: step-provisioner-password
+  namespace: step-issuer
 type: generic
 stringData:
   password: $(cat artifacts/step-issuer-password)
 kind: Secret
 ---
 apiVersion: certmanager.step.sm/v1beta1
-kind: StepIssuer
+kind: StepClusterIssuer
 metadata:
   name: step-issuer
 spec:
@@ -35,8 +36,9 @@ spec:
     name: step-issuer
     kid: $(cat artifacts/step-issuer-kid)
     passwordRef:
-      name: step-certificates-provisioner-password
+      name: step-provisioner-password
+      namespace: step-issuer
       key: password
 EOF
 
-kubectl apply -n default -f artifacts/step-issuer.yaml --server-side
+kubectl apply -f artifacts/step-issuer.yaml --server-side
