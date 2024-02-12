@@ -1,6 +1,7 @@
 #!/bin/bash
 
-VAULT_VERSION=1.10.3
+#VAULT_VERSION=1.10.3
+VAULT_VERSION=1.15.5
 
 container_addr() {
 	docker container inspect "$1" | jq -r '.[0].NetworkSettings.Networks.kind.IPAddress'
