@@ -20,6 +20,13 @@ create_kind_cluster() {
 	fi
 }
 
+apply_manifests() {
+	until kubectl apply -k "$1" --server-side; do
+		echo "failed to apply manifests in $1; will retry..." >&2
+		sleep 5
+	done
+}
+
 set -eu
 
 mkdir -p artifacts
@@ -27,5 +34,5 @@ mkdir -p artifacts
 create_kind_cluster vault-cluster
 create_kind_cluster client-cluster
 
-KUBECONFIG=artifacts/kubeconfig-vault-cluster kubectl apply -k manifests/vault-cluster --server-side
-KUBECONFIG=artifacts/kubeconfig-client-cluster kubectl apply -k manifests/client-cluster --server-side
+KUBECONFIG=artifacts/kubeconfig-vault-cluster apply_manifests manifests/vault-cluster/stage1
+KUBECONFIG=artifacts/kubeconfig-client-cluster apply_manifests manifests/client-cluster/stage1
