@@ -18,6 +18,12 @@ create_kind_cluster() {
 			EOF
 		fi
 	fi
+
+	# extract node addresses into a hosts-format file
+	docker container ps --filter label=io.x-k8s.kind.cluster="${cluster_name}" --format '{{.Names}}' |
+		xargs -INODE docker container inspect "NODE" \
+		--format '{{.NetworkSettings.Networks.kind.IPAddress}} NODE' \
+		> "artifacts/${cluster_name}.hosts"
 }
 
 apply_manifests() {
