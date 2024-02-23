@@ -1,0 +1,59 @@
+auth:
+  - type: kubernetes
+    roles:
+      # Allow every pod in the default namespace to use the secret kv store
+      - name: vault_issuer
+        bound_service_account_names: ["vault-issuer"]
+        bound_service_account_namespaces: ["cert-manager"]
+        policies: ["allow_pki"]
+        ttl: 1h
+
+policies:
+  - name: allow_pki
+    rules: |
+      path "pki_nerc_intermediate/*" {
+        capabilities = ["create", "read", "update"]
+      }
+
+secrets:
+  - path: pki_nerc_root
+    type: pki
+    description: NERC internal root CA
+    config:
+      default_lease_ttl: 168h
+      max_lease_ttl: 87600h
+    configuration:
+      config:
+        - name: urls
+          issuing_certificates: https://vault.apps.nerc-ocp-infra.rc.fas.harvard.edu/v1/pki_nerc_root/ca
+          crl_distribution_points: https://vault.apps.nerc-ocp-infra.rc.fas.harvard.edu/v1/pki_nerc_root/crl
+        - name: crl
+          expiry: 168h
+      root/generate:
+      - name: internal
+        common_name: NERC Internal Root CA
+        ttl: 87600h
+        max_path_length: 1
+        create_only: true
+  - path: pki_nerc_intermediate
+    type: pki
+    description: NERC internal intermediate CA
+    config:
+      default_lease_ttl: 168h
+      max_lease_ttl: 87600h
+    configuration:
+      config:
+        - name: urls
+          issuing_certificates: https://vault.apps.nerc-ocp-infra.rc.fas.harvard.edu/v1/pki_nerc_intermediate/ca
+          crl_distribution_points: https://vault.apps.nerc-ocp-infra.rc.fas.harvard.edu/v1/pki_nerc_intermediate/crl
+        - name: crl
+          expiry: 168h
+      roles:
+        - name: default
+          allow_any_name: true
+          allow_subdomains: false
+          # 6 months
+          ttl: 4380h
+          max_ttl: 4380h
+          enforce_hostnames: true
+          allow_bare_domains: true
